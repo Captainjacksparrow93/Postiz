@@ -4,33 +4,35 @@ services:
     container_name: postiz
     restart: always
     environment:
-      # === Required Settings
-      MAIN_URL: '${MAIN_URL:-http://72.62.248.38:4007}'
-      FRONTEND_URL: '${FRONTEND_URL:-http://72.62.248.38:4007}'
-      NEXT_PUBLIC_BACKEND_URL: '${NEXT_PUBLIC_BACKEND_URL:-http://72.62.248.38:4007/api}'
-      JWT_SECRET: '${JWT_SECRET:-change-this-to-a-long-random-secret}'
-      DATABASE_URL: 'postgresql://${POSTGRES_USER:-postiz-user}:${POSTGRES_PASSWORD:-postiz-password}@postiz-postgres:5432/${POSTGRES_DB:-postiz-db-local}'
-      REDIS_URL: 'redis://postiz-redis:6379'
+      # === URLs – hardcoded to this VPS ===
+      MAIN_URL: 'http://72.62.248.38:4007'
+      FRONTEND_URL: 'http://72.62.248.38:4007'
+      NEXT_PUBLIC_BACKEND_URL: 'http://72.62.248.38:4007/api'
       BACKEND_INTERNAL_URL: 'http://localhost:3000'
-      TEMPORAL_ADDRESS: "temporal:7233"
-      IS_GENERAL: 'true'
-      DISABLE_REGISTRATION: '${DISABLE_REGISTRATION:-false}'
 
-      # === Storage Settings
+      # === Auth & Database ===
+      JWT_SECRET: 'pZ9xK2mQ8nR4vL7wY1uT5bF3jH6cA0eD-postiz-hostinger-vps'
+      DATABASE_URL: 'postgresql://postiz-user:postiz-pass@postiz-postgres:5432/postiz-db'
+      REDIS_URL: 'redis://postiz-redis:6379'
+
+      # === Temporal ===
+      TEMPORAL_ADDRESS: 'temporal:7233'
+
+      # === App Settings ===
+      IS_GENERAL: 'true'
+      DISABLE_REGISTRATION: 'false'
+      NX_ADD_PLUGINS: 'false'
+
+      # === Storage (local uploads) ===
       STORAGE_PROVIDER: 'local'
       UPLOAD_DIRECTORY: '/uploads'
       NEXT_PUBLIC_UPLOAD_DIRECTORY: '/uploads'
 
-      # === Cloudflare (R2) Settings
-      # STORAGE_PROVIDER: 'cloudflare'
-      # CLOUDFLARE_ACCOUNT_ID: 'your-account-id'
-      # CLOUDFLARE_ACCESS_KEY: 'your-access-key'
-      # CLOUDFLARE_SECRET_ACCESS_KEY: 'your-secret-access-key'
-      # CLOUDFLARE_BUCKETNAME: 'your-bucket-name'
-      # CLOUDFLARE_BUCKET_URL: 'https://your-bucket-url.r2.cloudflarestorage.com/'
-      # CLOUDFLARE_REGION: 'auto'
+      # === Misc ===
+      API_LIMIT: '30'
+      FEE_AMOUNT: '0.05'
 
-      # === Social Media API Settings
+      # === Social / OAuth keys – fill in only what you need ===
       X_API_KEY: ''
       X_API_SECRET: ''
       LINKEDIN_CLIENT_ID: ''
@@ -39,8 +41,6 @@ services:
       REDDIT_CLIENT_SECRET: ''
       GITHUB_CLIENT_ID: ''
       GITHUB_CLIENT_SECRET: ''
-      BEEHIIVE_API_KEY: ''
-      BEEHIIVE_PUBLICATION_ID: ''
       THREADS_APP_ID: ''
       THREADS_APP_SECRET: ''
       FACEBOOK_APP_ID: ''
@@ -51,8 +51,6 @@ services:
       TIKTOK_CLIENT_SECRET: ''
       PINTEREST_CLIENT_ID: ''
       PINTEREST_CLIENT_SECRET: ''
-      DRIBBBLE_CLIENT_ID: ''
-      DRIBBBLE_CLIENT_SECRET: ''
       DISCORD_CLIENT_ID: ''
       DISCORD_CLIENT_SECRET: ''
       DISCORD_BOT_TOKEN_ID: ''
@@ -62,57 +60,17 @@ services:
       MASTODON_URL: 'https://mastodon.social'
       MASTODON_CLIENT_ID: ''
       MASTODON_CLIENT_SECRET: ''
-
-      # === OAuth & Authentik Settings
-      # NEXT_PUBLIC_POSTIZ_OAUTH_DISPLAY_NAME: 'Authentik'
-      # NEXT_PUBLIC_POSTIZ_OAUTH_LOGO_URL: 'https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/authentik.png'
-      # POSTIZ_GENERIC_OAUTH: 'false'
-      # POSTIZ_OAUTH_URL: 'https://auth.example.com'
-      # POSTIZ_OAUTH_AUTH_URL: 'https://auth.example.com/application/o/authorize'
-      # POSTIZ_OAUTH_TOKEN_URL: 'https://auth.example.com/application/o/token'
-      # POSTIZ_OAUTH_USERINFO_URL: 'https://authentik.example.com/application/o/userinfo'
-      # POSTIZ_OAUTH_CLIENT_ID: ''
-      # POSTIZ_OAUTH_CLIENT_SECRET: ''
-      # POSTIZ_OAUTH_SCOPE: "openid profile email"  # Optional: uncomment to override default scope
-
-      # === Sentry
-
-      # NEXT_PUBLIC_SENTRY_DSN: 'http://spotlight:8969/stream'
-      # SENTRY_SPOTLIGHT: '1'
-
-      # === Misc Settings
       OPENAI_API_KEY: ''
-      NEXT_PUBLIC_DISCORD_SUPPORT: ''
-      NEXT_PUBLIC_POLOTNO: ''
-      API_LIMIT: 30
-
-      # === Payment / Stripe Settings
-      FEE_AMOUNT: 0.05
       STRIPE_PUBLISHABLE_KEY: ''
       STRIPE_SECRET_KEY: ''
       STRIPE_SIGNING_KEY: ''
       STRIPE_SIGNING_KEY_CONNECT: ''
 
-      # === Developer Settings
-      NX_ADD_PLUGINS: false
-
-      # === Short Link Service Settings (Optional - leave blank if unused)
-      # DUB_TOKEN: ""
-      # DUB_API_ENDPOINT: "https://api.dub.co"
-      # DUB_SHORT_LINK_DOMAIN: "dub.sh"
-      # SHORT_IO_SECRET_KEY: ""
-      # KUTT_API_KEY: ""
-      # KUTT_API_ENDPOINT: "https://kutt.it/api/v2"
-      # KUTT_SHORT_LINK_DOMAIN: "kutt.it"
-      # LINK_DRIP_API_KEY: ""
-      # LINK_DRIP_API_ENDPOINT: "https://api.linkdrip.com/v1/"
-      # LINK_DRIP_SHORT_LINK_DOMAIN: "dripl.ink"
-
     volumes:
       - postiz-config:/config/
       - postiz-uploads:/uploads/
     ports:
-      - "4007:5000"
+      - '4007:5000'
     networks:
       - postiz-network
       - temporal-network
@@ -121,61 +79,76 @@ services:
         condition: service_healthy
       postiz-redis:
         condition: service_healthy
+      temporal:
+        condition: service_started
 
+  # ── Postiz Postgres ───────────────────────────────────────────
   postiz-postgres:
     image: postgres:17-alpine
     container_name: postiz-postgres
     restart: always
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postiz-password}
-      POSTGRES_USER: ${POSTGRES_USER:-postiz-user}
-      POSTGRES_DB: ${POSTGRES_DB:-postiz-db-local}
+      POSTGRES_PASSWORD: postiz-pass
+      POSTGRES_USER: postiz-user
+      POSTGRES_DB: postiz-db
     volumes:
       - postgres-volume:/var/lib/postgresql/data
     networks:
       - postiz-network
     healthcheck:
-      test: pg_isready -U ${POSTGRES_USER:-postiz-user} -d ${POSTGRES_DB:-postiz-db-local}
+      test: ['CMD-SHELL', 'pg_isready -U postiz-user -d postiz-db']
       interval: 10s
-      timeout: 3s
-      retries: 3
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis ─────────────────────────────────────────────────────
   postiz-redis:
     image: redis:7.2
     container_name: postiz-redis
     restart: always
     healthcheck:
-      test: redis-cli ping
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 10
+      start_period: 10s
     volumes:
       - postiz-redis-data:/data
     networks:
       - postiz-network
 
-  # -----------------------
-  # Temporal Stack
-  # -----------------------
+  # ── Temporal Stack ────────────────────────────────────────────
   temporal-postgresql:
     container_name: temporal-postgresql
-    image: postgres:16
+    image: postgres:16-alpine
+    restart: always
     environment:
       POSTGRES_PASSWORD: temporal
       POSTGRES_USER: temporal
+      POSTGRES_DB: temporal
     networks:
       - temporal-network
     expose:
       - 5432
     volumes:
-      - /var/lib/postgresql/data
+      - temporal-postgres-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U temporal -d temporal']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   temporal:
     container_name: temporal
+    image: temporalio/auto-setup:1.28.1
+    restart: on-failure
     ports:
       - '7233:7233'
-    image: temporalio/auto-setup:1.28.1
     depends_on:
-      - temporal-postgresql
+      temporal-postgresql:
+        condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=5432
@@ -189,25 +162,11 @@ services:
       - temporal-network
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
-    labels:
-      kompose.volume.type: configMap
-
-  temporal-admin-tools:
-    container_name: temporal-admin-tools
-    image: temporalio/admin-tools:1.28.1-tctl-1.18.4-cli-1.4.1
-    environment:
-      - TEMPORAL_ADDRESS=temporal:7233
-      - TEMPORAL_CLI_ADDRESS=temporal:7233
-    networks:
-      - temporal-network
-    stdin_open: true
-    depends_on:
-      - temporal
-    tty: true
 
   temporal-ui:
     container_name: temporal-ui
     image: temporalio/ui:2.34.0
+    restart: always
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://127.0.0.1:3000
@@ -215,23 +174,19 @@ services:
       - temporal-network
     ports:
       - '8080:8080'
+    depends_on:
+      - temporal
 
 volumes:
   postgres-volume:
-    external: false
-
+  temporal-postgres-volume:
   postiz-redis-data:
-    external: false
-
   postiz-config:
-    external: false
-
   postiz-uploads:
-    external: false
 
 networks:
   postiz-network:
-    external: false
+    driver: bridge
   temporal-network:
     driver: bridge
     name: temporal-network
